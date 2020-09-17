@@ -15,7 +15,7 @@ import torch.backends.cudnn as cudnn
 
 from torch.autograd import Variable
 from model_search import Network
-from architect import Architect
+from architect_lbj import Architect
 
 from tqdm import trange
 
@@ -163,7 +163,8 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     input_search = Variable(input_search, requires_grad=False).cuda()
     target_search = Variable(target_search, requires_grad=False).cuda(async=True)
 
-    architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
+    # architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
+    architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled, C=args.init_channels)
     
     # random init delta
     # print(delta.requires_grad) # True
