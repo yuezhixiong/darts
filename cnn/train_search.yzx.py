@@ -141,7 +141,7 @@ def main():
     logging.info('valid_acc %f', valid_acc)
     valid_acc_list.append(valid_acc)
 
-    utils.save(model, os.path.join(args.save, 'weights_{}.pt'.format(epoch)))
+    utils.save(model, os.path.join(args.save, 'weights.pt'))
     np.save(os.path.join(args.save, 'acc_list.npy'), np.array([train_acc_list,valid_acc_list]))
 
 
@@ -154,7 +154,7 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     model.train()
     n = input.size(0)
     delta = torch.zeros_like(input).cuda()
-    input = Variable(input, requires_grad=True).cuda()
+    input1 = Variable(input, requires_grad=False).cuda()
     target = Variable(target, requires_grad=False).cuda(async=True)
 
     # print('input', input.size()) # ([16, 3, 32, 32])
@@ -164,8 +164,8 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     target_search = Variable(target_search, requires_grad=False).cuda(async=True)
 
     # architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
-    architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled, C=args.init_channels)
-    
+    architect.step(input1, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled, C=args.init_channels)
+    input = Variable(input, requires_grad=True).cuda()
     # random init delta
     # print(delta.requires_grad) # True
     # norm eps

@@ -3,7 +3,7 @@ import numpy as np
 import torch.nn as nn
 from torch.autograd import Variable
 from min_norm_solvers import MinNormSolver, gradient_normalizers
-
+import torch.nn.functional as F
 
 def _concat(xs):
   return torch.cat([x.view(-1) for x in xs])
@@ -55,12 +55,12 @@ class Architect(object):
     loss = 0
     # u = torch.from_numpy(np.array([0, 0, 0, 0, 2*(C**2+9*C), 2*(C**2+25*C), C**2+9*C, C**2+25*C]))
     C_list = [C, C, 2*C, 2*C, 2*C, 4*C, 4*C, 4*C]
-    for i in range(self.unrolled_model._layers):
-      if self.unrolled_model.cells[i].reduction:
-        alpha = F.softmax(self.unrolled_model.arch_parameters()[1], dim=-1)
+    for i in range(unrolled_model._layers):
+      if unrolled_model.cells[i].reduction:
+        alpha = F.softmax(unrolled_model.arch_parameters()[1], dim=-1)
         u = compute_u(C_list[i], is_reduction=True)
       else:
-        alpha = F.softmax(self.unrolled_model.arch_parameters()[0], dim=-1)
+        alpha = F.softmax(unrolled_model.arch_parameters()[0], dim=-1)
         u = compute_u(C_list[i], is_reduction=False)
       loss += (2 * torch.mm(alpha.t(), u).sum(dim=1) / torch.from_numpy(np.repeat(range(2, 6), [2, 3, 4, 5]))).sum()
     return loss
@@ -80,7 +80,7 @@ class Architect(object):
 
     # ---- param loss ----
     self.optimizer.zero_grad()
-    param_loss = param_number(unrolled_model, C)
+    param_loss = self.param_number(unrolled_model, C)
     param_loss.backward()
     grads['param'] = []
     for param in unrolled_model.arch_parameters():
