@@ -35,7 +35,7 @@ def plot(genotype, filename):
   for i in range(steps):
     g.edge(str(i), "c_{k}", fillcolor="gray")
 
-  g.render(filename, view=True)
+  g.render(filename, view=False)
 
 
 if __name__ == '__main__':

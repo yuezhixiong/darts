@@ -15,13 +15,13 @@ import torch.backends.cudnn as cudnn
 
 from torch.autograd import Variable
 from model_search import Network
-from architect import Architect
+from architect_lbj import Architect
 
 from tqdm import trange
 
 parser = argparse.ArgumentParser("cifar")
-parser.add_argument('--data', type=str, default='/home/yuezx/dataset.yzx/', help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
+parser.add_argument('--batch_size', type=int, default=64, help='batch size')
 parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
 parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
@@ -163,7 +163,8 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     input_search = Variable(input_search, requires_grad=False).cuda()
     target_search = Variable(target_search, requires_grad=False).cuda(async=True)
 
-    architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
+    # architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled)
+    architect.step(input, target, input_search, target_search, lr, optimizer, unrolled=args.unrolled, C=args.init_channels)
     
     # random init delta
     # print(delta.requires_grad) # True

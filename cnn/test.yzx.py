@@ -17,7 +17,11 @@ from model import NetworkCIFAR as Network
 
 
 parser = argparse.ArgumentParser("cifar")
+<<<<<<< HEAD
 parser.add_argument('--data', type=str, default='../../dataset.yzx', help='location of the data corpus')
+=======
+parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
+>>>>>>> origin/v100
 parser.add_argument('--batch_size', type=int, default=16, help='batch size')
 parser.add_argument('--report_freq', type=float, default=50, help='report frequency')
 parser.add_argument('--gpu', type=int, default=1, help='gpu device id')
@@ -118,7 +122,11 @@ def test_FGSM(net, testloader):
         # print(adv_pred, true_label)
         correctNum += (adv_pred == true_label).sum().item()
         totalNum += len(labels)
+<<<<<<< HEAD
         acc = correctNum / totalNum *100
+=======
+        acc = correctNum / totalNum
+>>>>>>> origin/v100
         print(acc)
     
     return acc
