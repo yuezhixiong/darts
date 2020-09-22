@@ -17,12 +17,8 @@ from model import NetworkCIFAR as Network
 
 
 parser = argparse.ArgumentParser("cifar")
-<<<<<<< HEAD
 parser.add_argument('--data', type=str, default='../../dataset.yzx', help='location of the data corpus')
-=======
-parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
->>>>>>> origin/v100
-parser.add_argument('--batch_size', type=int, default=16, help='batch size')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--report_freq', type=float, default=50, help='report frequency')
 parser.add_argument('--gpu', type=int, default=1, help='gpu device id')
 parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
@@ -36,7 +32,7 @@ parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--arch', type=str, default='DARTS', help='which architecture to use')
 
 parser.add_argument('--epsilon', default=8, type=int)
-parser.add_argument('--alpha', default=10, type=float, help='Step size')
+parser.add_argument('--alpha', default=0.8, type=float, help='Step size')
 args = parser.parse_args()
 
 log_format = '%(asctime)s %(message)s'
@@ -77,7 +73,7 @@ def main():
       test_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=1)
 
   model.drop_path_prob = args.drop_path_prob
-  test_adv_acc = test_FGSM(model, test_queue)
+  test_adv_acc = test_PGD(model, test_queue)
   logging.info('test_adv_acc %f', test_adv_acc)
 
 def clamp(X, lower_limit, upper_limit):
@@ -122,11 +118,56 @@ def test_FGSM(net, testloader):
         # print(adv_pred, true_label)
         correctNum += (adv_pred == true_label).sum().item()
         totalNum += len(labels)
-<<<<<<< HEAD
         acc = correctNum / totalNum *100
-=======
-        acc = correctNum / totalNum
->>>>>>> origin/v100
+        print(acc)
+    
+    return acc
+
+def test_PGD(net, testloader, step_num=10):
+    cifar10_mean = (0.4914, 0.4822, 0.4465)
+    cifar10_std = (0.2471, 0.2435, 0.2616)
+    std = torch.FloatTensor(cifar10_std).view(3,1,1).cuda()
+    mu = torch.FloatTensor(cifar10_mean).view(3,1,1).cuda()
+    std = torch.FloatTensor(cifar10_std).view(3,1,1).cuda()
+    upper_limit = ((1 - mu)/ std).cuda()
+    lower_limit = ((0 - mu)/ std).cuda()
+
+    epsilon = (args.epsilon / 255.) / std
+    epsilon = epsilon.cuda()
+    alpha = (args.alpha / 255.) / std
+    alpha = alpha.cuda()
+
+    net.eval()
+    criterion = nn.CrossEntropyLoss().cuda()
+    correctNum = 0
+    totalNum = 0
+    for images,labels in testloader:
+        images = images.cuda()
+        labels = Variable(labels, requires_grad=False).cuda()
+        adv_input = Variable(images, requires_grad=True).cuda()
+        # print(images.min(),images.max())
+
+        for i in range(step_num):
+          logits, _ = net(adv_input)
+          loss = criterion(logits, labels)
+          loss.backward(retain_graph=True)
+          grad = torch.autograd.grad(loss, adv_input, 
+                                    retain_graph=False, create_graph=False)[0]
+          grad = grad.detach().data
+          adv_images = adv_input.detach().data + alpha * torch.sign(grad)
+          delta = clamp(adv_images - images, -epsilon, epsilon)
+          adv_images = clamp(images + delta, lower_limit, upper_limit)
+          adv_input = Variable(adv_images, requires_grad=True).cuda()
+          # print(i, delta*std*255)
+
+        adv_logits, _ = net(adv_input)
+        
+        adv_pred = adv_logits.data.cpu().numpy().argmax(1)
+        true_label = labels.data.cpu().numpy()
+        print(adv_pred, true_label)
+        correctNum += (adv_pred == true_label).sum().item()
+        totalNum += len(labels)
+        acc = correctNum / totalNum *100
         print(acc)
     
     return acc
